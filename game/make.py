@@ -3,9 +3,11 @@ assert not __debug__  # Run with -OO
 import codecs
 from cryptography.fernet import Fernet
 import os
+import shutil
 
 FUNNY_FARM_SRC_DIR = 'Toontowns-Funny-Farm'
 BUILT_DIR = 'built'
+DATA_DIR = 'data'
 
 if not os.path.exists(BUILT_DIR):
     os.makedirs(BUILT_DIR)
@@ -25,13 +27,33 @@ def getFileContents(filename, encrypt=False):
 
     return data
 
-def generateConfigData():
+def generateGameData():
+    if not os.path.exists(FUNNY_FARM_SRC_DIR):
+        return
+
     print('Generating config data...')
     config = getFileContents(FUNNY_FARM_SRC_DIR + '/config/release.prc', True)
-    configData = 'CONFIG = %r\n' % config
-    with open(BUILT_DIR + '/configdata.py', 'w') as f:
-        f.write(configData)
+    gameData = 'CONFIG = %r\n' % config
+    with open(BUILT_DIR + '/gamedata.py', 'w') as f:
+        f.write(gameData)
         f.close()
 
+def copyFiles():
+    print('Copying files...')
+    if not os.path.exists(FUNNY_FARM_SRC_DIR):
+        return
 
-generateConfigData()
+    otpDir = FUNNY_FARM_SRC_DIR + '/otp'
+    if not os.path.exists(otpDir):
+        return
+
+    toontownDir = FUNNY_FARM_SRC_DIR + '/toontown'
+    if not os.path.exists(toontownDir):
+        return
+
+    shutil.copytree(otpDir, BUILT_DIR + '/otp')
+    shutil.copytree(toontownDir, BUILT_DIR + '/toontown')
+
+
+generateGameData()
+copyFiles()
