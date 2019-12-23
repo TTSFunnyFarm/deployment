@@ -1,12 +1,37 @@
 assert not __debug__  # Run with -OO
 
+import codecs
+from cryptography.fernet import Fernet
 import os
 
-FUNNY_FARM_SRC_DIR = 'Toontowns-Funny-Farm/'
-PANDA3D_DIR = 'C:\\Panda3D-1.10.4.1-x64'
+FUNNY_FARM_SRC_DIR = 'Toontowns-Funny-Farm'
+BUILT_DIR = 'built'
 
-if not os.path.exists(FUNNY_FARM_SRC_DIR):
-    raise FileNotFoundError('Unable to locate the Toontown\'s Funny Farm game source code! Make sure to clone the Toontown\'s Funny Farm game source code repository into this directory.')
+if not os.path.exists(BUILT_DIR):
+    os.makedirs(BUILT_DIR)
 
-if not os.path.exists(PANDA3D_DIR):
-    raise FileNotFoundError('Unable to locate the Panda3D SDK! Make sure to install the Panda3D SDK linked in the game source code repository\'s README.')
+def generateKey(size=256):
+    return os.urandom(size)
+
+def getFileContents(filename, encrypt=False):
+    with open(filename, 'rb') as f:
+        data = f.read()
+
+    if encrypt:
+        key = generateKey(32)
+        key = codecs.encode(key, 'base64')
+        fernet = Fernet(key)
+        data = key + fernet.encrypt(data)
+
+    return data
+
+def generateConfigData():
+    print('Generating config data...')
+    config = getFileContents(FUNNY_FARM_SRC_DIR + '/config/release.prc', True)
+    configData = 'CONFIG = %r\n' % config
+    with open(BUILT_DIR + '/configdata.py', 'w') as f:
+        f.write(configData)
+        f.close()
+
+
+generateConfigData()
