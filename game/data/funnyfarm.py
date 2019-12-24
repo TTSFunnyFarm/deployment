@@ -10,7 +10,7 @@ prc = fernet.decrypt(prc)
 loadPrcFileData('game config', prc)
 
 # Resources
-for file in glob.glob('resources/*.mf'):
+for file in glob.glob('resources/custom/*.mf'):
     mf = Multifile()
     mf.openReadWrite(Filename(file))
     names = mf.getSubfileNames()
