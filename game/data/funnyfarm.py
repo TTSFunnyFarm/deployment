@@ -6,10 +6,8 @@ import glob
 # Config
 configKey = gamedata.CONFIG[0:45]
 configData = gamedata.CONFIG[45:]
-
 configFernet = Fernet(configKey)
 config = configFernet.decrypt(configData)
-
 loadPrcFileData('game config', config.decode())
 
 # Resources
@@ -19,7 +17,7 @@ for file in glob.glob('resources/*.mf'):
     names = mf.getSubfileNames()
     for name in names:
         ext = os.path.splitext(name)[1]
-        if ext not in ['.jpg', '.jpeg', '.ogg', '.rgb']:
+        if ext not in ['.jpg', '.jpeg', '.png', '.ogg', '.rgb']:
             mf.removeSubfile(name)
 
     vfs.mount(mf, Filename('/'), 0)
