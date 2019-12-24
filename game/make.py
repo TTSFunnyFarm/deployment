@@ -115,7 +115,23 @@ def buildGame():
     if returnCode == 0:
         notify.info('Build finished successfully!')
 
+def copyRequiredFiles():
+    notify.info('Copying required files...')
+    pandaDir = os.path.abspath(os.path.join(os.path.dirname(sys.executable), '..'))
+    if not os.path.exists(pandaDir):
+        return
+
+    pandaDlls = [
+        'libpandagl.dll',
+        'libp3tinydisplay.dll',
+        'libp3openal_audio.dll'
+    ]
+
+    for pandaDll in pandaDlls:
+        shutil.copy(os.path.join(pandaDir, 'bin', pandaDll), BUILT_DIR + '/funnyfarm.dist/' + pandaDll)
+
 
 copyBuildFiles()
 generateGameData()
 buildGame()
+copyRequiredFiles()
