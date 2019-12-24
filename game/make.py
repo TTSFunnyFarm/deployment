@@ -161,9 +161,13 @@ def copyRequiredFiles():
         shutil.copy(os.path.join(PANDA3D_DIR, 'bin', pandaDll), os.path.join(BUILT_DIR, 'funnyfarm.dist'))
 
     resourcesDir = os.path.join(BUILT_DIR, 'resources')
+    builtResourcesDir = os.path.join(BUILT_DIR, 'funnyfarm.dist', 'resources')
+    if not os.path.exists(builtResourcesDir):
+        os.makedirs(builtResourcesDir)
+
     phases = [phase for phase in os.listdir(resourcesDir) if phase.startswith('phase_') and phase.endswith('.mf')]
     for phase in phases:
-        shutil.copy(os.path.join(resourcesDir, phase), os.path.join(BUILT_DIR, 'funnyfarm.dist', 'resources'))
+        shutil.copy(os.path.join(resourcesDir, phase), builtResourcesDir)
 
     notify.info('Done!')
 
