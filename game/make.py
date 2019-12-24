@@ -1,3 +1,5 @@
+assert not __debug__  # Run with -OO
+
 from cryptography.fernet import Fernet
 from direct.directnotify import DirectNotifyGlobal
 import argparse
@@ -14,9 +16,10 @@ args = parser.parse_args()
 notify = DirectNotifyGlobal.directNotify.newCategory('FunnyFarmMake')
 notify.setInfo(True)
 
-FUNNY_FARM_SRC_DIR = 'Toontowns-Funny-Farm'
+ROOT_DIR = os.getcwd()
 BUILT_DIR = 'built'
 DATA_DIR = 'data'
+FUNNY_FARM_SRC_DIR = 'Toontowns-Funny-Farm'
 
 if not os.path.exists(BUILT_DIR):
     os.makedirs(BUILT_DIR)
@@ -121,6 +124,7 @@ def buildGame():
 
 def copyRequiredFiles():
     notify.info('Copying required files...')
+    os.chdir(ROOT_DIR)
     pandaDir = os.path.abspath(os.path.join(os.path.dirname(sys.executable), '..'))
     if not os.path.exists(pandaDir):
         return
