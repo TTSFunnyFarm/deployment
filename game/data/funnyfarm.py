@@ -8,6 +8,8 @@ key, prc = gamedata.CONFIG[0:45], gamedata.CONFIG[45:]
 fernet = Fernet(key)
 prc = fernet.decrypt(prc)
 loadPrcFileData('game config', prc)
+del key
+del prc
 
 # Resources
 for file in glob.glob('resources/custom/*.mf'):
