@@ -56,7 +56,7 @@ def generateGameData():
 
     config = getFileContents(configFile, True)
     gameData = 'CONFIG = %r\n' % config
-    with open(os.path.join(BUILT_DIR, 'gamedata.py', 'w')) as f:
+    with open(os.path.join(BUILT_DIR, 'gamedata.py'), 'w') as f:
         f.write(gameData)
         f.close()
 
