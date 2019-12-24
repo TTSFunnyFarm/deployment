@@ -4,11 +4,10 @@ import gamedata
 import glob
 
 # Config
-configKey = gamedata.CONFIG[0:45]
-configData = gamedata.CONFIG[45:]
-configFernet = Fernet(configKey)
-config = configFernet.decrypt(configData)
-loadPrcFileData('game config', config.decode())
+key, prc = gamedata.CONFIG[0:45], gamedata.CONFIG[45:]
+fernet = Fernet(key)
+prc = fernet.decrypt(prc)
+loadPrcFileData('game config', prc)
 
 # Resources
 for file in glob.glob('resources/*.mf'):
