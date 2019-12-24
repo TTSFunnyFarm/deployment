@@ -1,10 +1,15 @@
 from cryptography.fernet import Fernet
 from direct.directnotify import DirectNotifyGlobal
+import argparse
 import codecs
 import os
 import shutil
 import subprocess
 import sys
+
+parser = argparse.ArgumentParser(description='Build script for Toontown\'s Funny Farm')
+parser.add_argument('--version', help='Game version', required=True)
+args = parser.parse_args()
 
 notify = DirectNotifyGlobal.directNotify.newCategory('FunnyFarmMake')
 notify.setInfo(True)
@@ -32,22 +37,31 @@ def getFileContents(filename, encrypt=False):
     return data
 
 def generateGameData():
-    if not os.path.exists(FUNNY_FARM_SRC_DIR):
+    configFile = BUILT_DIR + '/config/release.prc'
+    if not os.path.exists(configFile):
         return
 
     notify.info('Generating config data...')
-    config = getFileContents(FUNNY_FARM_SRC_DIR + '/config/release.prc', True)
+    
+    with open(configFile, 'r') as f:
+        configData = f.read()
+
+    configData.replace('%GAME_VERSION%', args.version)
+    with open(configFile, 'w') as f:
+        f.write(configData)
+
+    config = getFileContents(configFile, True)
     gameData = 'CONFIG = %r\n' % config
     with open(BUILT_DIR + '/gamedata.py', 'w') as f:
         f.write(gameData)
         f.close()
 
-def copyFiles():
+def copyBuildFiles():
     if os.path.exists(BUILT_DIR):
-        notify.info('Cleaning up old files...')
+        notify.info('Cleaning up old build files...')
         shutil.rmtree(BUILT_DIR)
 
-    notify.info('Copying files...')
+    notify.info('Copying build files...')
     if not os.path.exists(FUNNY_FARM_SRC_DIR):
         return
 
@@ -61,6 +75,16 @@ def copyFiles():
 
     shutil.copytree(otpDir, BUILT_DIR + '/otp')
     shutil.copytree(toontownDir, BUILT_DIR + '/toontown')
+
+    configFile = FUNNY_FARM_SRC_DIR + '/config/release.prc'
+    if not os.path.exists(configFile):
+        return
+
+    buildConfigFile = BUILT_DIR + '/config/release.prc'
+    if not os.path.exists(os.path.dirname(buildConfigFile)):
+        os.makedirs(os.path.dirname(buildConfigFile))
+
+    shutil.copy(configFile, BUILT_DIR + '/config/release.prc')
 
     if not os.path.exists(DATA_DIR):
         return
@@ -85,13 +109,13 @@ def buildGame():
 
     os.chdir(BUILT_DIR)
     pythonDir = os.path.dirname(sys.executable)
-    scriptsDir = os.path.join(pythonDir, 'Scripts')
+    scriptsDir = os.path.join(pythonDir, 'Scripts/clcache.exe')
     os.environ['NUITKA_CLCACHE_BINARY'] = scriptsDir
     returnCode = subprocess.check_call([sys.executable, '-m', 'nuitka', '--standalone', '--show-progress', '--show-scons', '--follow-imports', '--python-flag=-OO', 'funnyfarm.py'])
     if returnCode == 0:
         notify.info('Build finished successfully!')
 
 
-copyFiles()
+copyBuildFiles()
 generateGameData()
 buildGame()
