@@ -20,6 +20,7 @@ ROOT_DIR = os.getcwd()
 BUILT_DIR = 'built'
 DATA_DIR = 'data'
 FUNNY_FARM_SRC_DIR = 'Toontowns-Funny-Farm'
+PANDA3D_DIR = os.path.abspath(os.path.join(os.path.dirname(sys.executable), '..'))
 
 if not os.path.exists(BUILT_DIR):
     os.makedirs(BUILT_DIR)
@@ -40,7 +41,7 @@ def getFileContents(filename, encrypt=False):
     return data
 
 def generateGameData():
-    configFile = BUILT_DIR + '/config/release.prc'
+    configFile = os.path.join(BUILT_DIR, 'config', 'release.prc')
     if not os.path.exists(configFile):
         return
 
@@ -55,7 +56,7 @@ def generateGameData():
 
     config = getFileContents(configFile, True)
     gameData = 'CONFIG = %r\n' % config
-    with open(BUILT_DIR + '/gamedata.py', 'w') as f:
+    with open(os.path.join(BUILT_DIR, 'gamedata.py', 'w')) as f:
         f.write(gameData)
         f.close()
 
@@ -72,22 +73,22 @@ def copyBuildFiles():
     if not os.path.exists(FUNNY_FARM_SRC_DIR):
         return
 
-    otpDir = FUNNY_FARM_SRC_DIR + '/otp'
+    otpDir = os.path.join(FUNNY_FARM_SRC_DIR, 'otp')
     if not os.path.exists(otpDir):
         return
 
-    toontownDir = FUNNY_FARM_SRC_DIR + '/toontown'
+    toontownDir = os.path.join(FUNNY_FARM_SRC_DIR, 'toontown')
     if not os.path.exists(toontownDir):
         return
 
-    shutil.copytree(otpDir, BUILT_DIR + '/otp')
-    shutil.copytree(toontownDir, BUILT_DIR + '/toontown')
+    shutil.copytree(otpDir, os.path.join(BUILT_DIR, 'otp'))
+    shutil.copytree(toontownDir, os.path.join(BUILT_DIR, 'toontown'))
 
-    configFile = FUNNY_FARM_SRC_DIR + '/config/release.prc'
+    configFile = os.path.join(FUNNY_FARM_SRC_DIR, 'config', 'release.prc')
     if not os.path.exists(configFile):
         return
 
-    buildConfigFile = BUILT_DIR + '/config/release.prc'
+    buildConfigFile = os.path.join(BUILT_DIR, 'config', 'release.prc')
     if not os.path.exists(os.path.dirname(buildConfigFile)):
         os.makedirs(os.path.dirname(buildConfigFile))
 
@@ -96,7 +97,7 @@ def copyBuildFiles():
     if not os.path.exists(DATA_DIR):
         return
 
-    mainFile = DATA_DIR + '/funnyfarm.py'
+    mainFile = os.path.join(DATA_DIR, 'funnyfarm.py')
     if not os.path.exists(mainFile):
         return
 
@@ -122,11 +123,32 @@ def buildGame():
     if returnCode == 0:
         notify.info('Build finished successfully!')
 
+def buildResources():
+    notify.info('Building the resources...')
+    os.chdir(os.path.join(ROOT_DIR, FUNNY_FARM_SRC_DIR, 'resources'))
+    destDir = os.path.join(ROOT_DIR, BUILT_DIR, 'resources')
+    if not os.path.exists(destDir):
+        os.makedirs(destDir)
+
+    for phase in os.listdir('.'):
+        if not phase.startswith('phase_'):
+            continue
+
+        if not os.path.isdir(phase):
+            continue
+
+        filename = phase + '.mf'
+        filepath = os.path.join(destDir, filename)
+        returnCode = subprocess.check_call([os.path.join(PANDA3D_DIR, 'bin', 'multify'), '-c', '-f', filepath, phase])
+        if returnCode == 0:
+            notify.info('%s built successfully!' % phase)
+
+    notify.info('All resources built successfully')
+
 def copyRequiredFiles():
     notify.info('Copying required files...')
     os.chdir(ROOT_DIR)
-    pandaDir = os.path.abspath(os.path.join(os.path.dirname(sys.executable), '..'))
-    if not os.path.exists(pandaDir):
+    if not os.path.exists(PANDA3D_DIR):
         return
 
     pandaDlls = [
@@ -136,10 +158,11 @@ def copyRequiredFiles():
     ]
 
     for pandaDll in pandaDlls:
-        shutil.copy(os.path.join(pandaDir, 'bin', pandaDll), BUILT_DIR + '/funnyfarm.dist')
+        shutil.copy(os.path.join(PANDA3D_DIR, 'bin', pandaDll), os.path.join(BUILT_DIR, 'funnyfarm.dist'))
 
 
 copyBuildFiles()
 generateGameData()
 buildGame()
+buildResources()
 copyRequiredFiles()
