@@ -59,7 +59,11 @@ def generateGameData():
 def copyBuildFiles():
     if os.path.exists(BUILT_DIR):
         notify.info('Cleaning up old build files...')
-        shutil.rmtree(BUILT_DIR)
+        for root, _, __ in os.walk(BUILT_DIR):
+            if root == 'built' or 'funnyfarm.build' in root:
+                continue
+
+            shutil.rmtree(root)
 
     notify.info('Copying build files...')
     if not os.path.exists(FUNNY_FARM_SRC_DIR):
@@ -84,7 +88,7 @@ def copyBuildFiles():
     if not os.path.exists(os.path.dirname(buildConfigFile)):
         os.makedirs(os.path.dirname(buildConfigFile))
 
-    shutil.copy(configFile, BUILT_DIR + '/config/release.prc')
+    shutil.copy(configFile, BUILT_DIR)
 
     if not os.path.exists(DATA_DIR):
         return
@@ -93,7 +97,7 @@ def copyBuildFiles():
     if not os.path.exists(mainFile):
         return
 
-    shutil.copy(mainFile, BUILT_DIR + '/funnyfarm.py')
+    shutil.copy(mainFile, BUILT_DIR)
 
 def buildGame():
     notify.info('Building the game...')
@@ -128,7 +132,7 @@ def copyRequiredFiles():
     ]
 
     for pandaDll in pandaDlls:
-        shutil.copy(os.path.join(pandaDir, 'bin', pandaDll), BUILT_DIR + '/funnyfarm.dist/' + pandaDll)
+        shutil.copy(os.path.join(pandaDir, 'bin', pandaDll), BUILT_DIR + '/funnyfarm.dist')
 
 
 copyBuildFiles()
