@@ -1,4 +1,4 @@
-from panda3d.core import loadPrcFileData, Multifile, Filename
+from panda3d.core import loadPrcFileData, Multifile, Filename, VirtualFileSystem
 from cryptography.fernet import Fernet
 import gamedata
 import glob
@@ -13,6 +13,7 @@ del key
 del prc
 
 # Resources
+vfs = VirtualFileSystem.getGlobalPtr()
 for file in glob.glob('resources/custom/*.mf'):
     mf = Multifile()
     mf.openReadWrite(Filename(file))
