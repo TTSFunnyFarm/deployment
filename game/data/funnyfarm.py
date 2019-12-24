@@ -2,6 +2,7 @@ from panda3d.core import loadPrcFileData, Multifile, Filename
 from cryptography.fernet import Fernet
 import gamedata
 import glob
+import os
 
 # Config
 key, prc = gamedata.CONFIG[0:45], gamedata.CONFIG[45:]
