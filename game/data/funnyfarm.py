@@ -1,4 +1,4 @@
-from panda3d.core import loadPrcFileData, Multifile
+from panda3d.core import loadPrcFileData, Multifile, Filename
 from cryptography.fernet import Fernet
 import gamedata
 import glob
