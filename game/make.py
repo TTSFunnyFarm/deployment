@@ -50,7 +50,7 @@ def generateGameData():
     with open(configFile, 'r') as f:
         configData = f.read()
 
-    configData.replace('%GAME_VERSION%', args.version)
+    configData = configData.replace('%GAME_VERSION%', args.version)
     with open(configFile, 'w') as f:
         f.write(configData)
 
@@ -143,7 +143,7 @@ def buildResources():
         if returnCode == 0:
             notify.info('%s built successfully!' % phase)
 
-    notify.info('All resources built successfully')
+    notify.info('All resources built successfully!')
 
 def copyRequiredFiles():
     notify.info('Copying required files...')
@@ -159,6 +159,13 @@ def copyRequiredFiles():
 
     for pandaDll in pandaDlls:
         shutil.copy(os.path.join(PANDA3D_DIR, 'bin', pandaDll), os.path.join(BUILT_DIR, 'funnyfarm.dist'))
+
+    resourcesDir = os.path.join(BUILT_DIR, 'resources')
+    phases = [phase for phase in os.listdir(resourcesDir) if phase.startswith('phase_') and phase.endswith('.mf')]
+    for phase in phases:
+        shutil.copy(os.path.join(resourcesDir, phase), os.path.join(BUILT_DIR, 'funnyfarm.dist'))
+
+    notify.info('Done!')
 
 
 copyBuildFiles()
