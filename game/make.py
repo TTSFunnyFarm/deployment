@@ -163,7 +163,7 @@ def copyRequiredFiles():
     resourcesDir = os.path.join(BUILT_DIR, 'resources')
     phases = [phase for phase in os.listdir(resourcesDir) if phase.startswith('phase_') and phase.endswith('.mf')]
     for phase in phases:
-        shutil.copy(os.path.join(resourcesDir, phase), os.path.join(BUILT_DIR, 'funnyfarm.dist'))
+        shutil.copy(os.path.join(resourcesDir, phase), os.path.join(BUILT_DIR, 'funnyfarm.dist', 'resources'))
 
     notify.info('Done!')
 
