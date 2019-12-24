@@ -19,7 +19,7 @@ for file in glob.glob('resources/custom/*.mf'):
         if ext not in ['.jpg', '.jpeg', '.png', '.ogg', '.rgb']:
             mf.removeSubfile(name)
 
-    vfs.mount(mf, Filename('/'), 0)
+    vfs.mount(mf, Filename('resources'), 0)
 
 # Time to shine, Funny Farm!
 import toontown.toonbase.FunnyFarmStart
