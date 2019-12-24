@@ -92,7 +92,7 @@ def copyBuildFiles():
     if not os.path.exists(os.path.dirname(buildConfigFile)):
         os.makedirs(os.path.dirname(buildConfigFile))
 
-    shutil.copy(configFile, BUILT_DIR)
+    shutil.copy(configFile, os.path.join(BUILT_DIR, 'config'))
 
     if not os.path.exists(DATA_DIR):
         return
