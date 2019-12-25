@@ -156,7 +156,8 @@ def copyRequiredFiles():
 
     pandaDlls = [
         'libpandagl.dll',
-        'libp3tinydisplay.dll',
+        'libp3windisplay.dll',
+        'cgGL.dll',
         'libp3openal_audio.dll'
     ]
 
