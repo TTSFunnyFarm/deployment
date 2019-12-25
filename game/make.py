@@ -113,15 +113,7 @@ def buildGame():
     except:
         raise ModuleNotFoundError('Nuitka was not found! Please install Nuitka via pip.')
 
-    try:
-        import clcache
-    except:
-        raise ModuleNotFoundError('clcache was not found! Please install clcache via pip.')
-
     os.chdir(BUILT_DIR)
-    pythonDir = os.path.dirname(sys.executable)
-    scriptsDir = os.path.join(pythonDir, 'Scripts/clcache.exe')
-    os.environ['NUITKA_CLCACHE_BINARY'] = scriptsDir
     returnCode = subprocess.check_call([sys.executable, '-OO', '-m', 'nuitka', '--standalone', '--file-reference-choice=frozen', '--show-progress', '--show-scons', '--follow-imports', '--python-flag=-S,-OO', 'funnyfarm.py'])
     if returnCode == 0:
         notify.info('Build finished successfully!')
