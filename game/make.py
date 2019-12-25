@@ -10,7 +10,10 @@ import subprocess
 import sys
 
 parser = argparse.ArgumentParser(description='Build script for Toontown\'s Funny Farm')
-parser.add_argument('--version', help='Game version', required=True)
+parser.add_argument('--version', '-v', help='Game version', required=True)
+if sys.platform == 'win32':
+    parser.add_argument('--arch', '-a', help='Target architecture', choices=['win32', 'win64'], required=True)
+
 args = parser.parse_args()
 
 notify = DirectNotifyGlobal.directNotify.newCategory('FunnyFarmMake')
