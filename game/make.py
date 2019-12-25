@@ -122,7 +122,7 @@ def buildGame():
     pythonDir = os.path.dirname(sys.executable)
     scriptsDir = os.path.join(pythonDir, 'Scripts/clcache.exe')
     os.environ['NUITKA_CLCACHE_BINARY'] = scriptsDir
-    returnCode = subprocess.check_call([sys.executable, '-OO', '-m', 'nuitka', '--standalone', '--show-progress', '--show-scons', '--follow-imports', '--python-flag=-OO', 'funnyfarm.py'])
+    returnCode = subprocess.check_call([sys.executable, '-OO', '-m', 'nuitka', '--standalone', '--file-reference-choice=frozen', '--show-progress', '--show-scons', '--follow-imports', '--python-flag=-S,-OO', 'funnyfarm.py'])
     if returnCode == 0:
         notify.info('Build finished successfully!')
 
