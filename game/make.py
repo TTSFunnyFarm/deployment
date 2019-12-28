@@ -3,14 +3,16 @@ assert not __debug__  # Run with -OO
 from cryptography.fernet import Fernet
 from direct.directnotify import DirectNotifyGlobal
 import argparse
-import codecs
 import os
 import shutil
 import subprocess
 import sys
 
 parser = argparse.ArgumentParser(description='Build script for Toontown\'s Funny Farm')
-parser.add_argument('--version', '-v', help='Game version', required=True)
+parser.add_argument('--version', '-v', help='Game version')
+parser.add_argument('--resources', '-r', help='Builds the game resources (phases).', action='store_true')
+parser.add_argument('--game', '-g', help='Builds the game source code.', action='store_true')
+parser.add_argument('--dist', '-d', help='Generate dist (patch manifest) files.', action='store_true')
 #if sys.platform == 'win32':
 #    parser.add_argument('--arch', '-a', help='Target architecture', choices=['win32', 'win64'], required=True)
 
@@ -18,6 +20,9 @@ args = parser.parse_args()
 
 notify = DirectNotifyGlobal.directNotify.newCategory('FunnyFarmMake')
 notify.setInfo(True)
+
+if (args.game or args.dist) and not args.version:
+    notify.error('Cannot build game or dist files without a game version. Use --version to set a game version.')
 
 ROOT_DIR = os.getcwd()
 BUILT_DIR = 'built'
@@ -28,16 +33,12 @@ PANDA3D_DIR = os.path.abspath(os.path.join(os.path.dirname(sys.executable), '..'
 if not os.path.exists(BUILT_DIR):
     os.makedirs(BUILT_DIR)
 
-def generateKey(size=256):
-    return os.urandom(size)
-
 def getFileContents(filename, encrypt=False):
     with open(filename, 'rb') as f:
         data = f.read()
 
     if encrypt:
-        key = generateKey(32)
-        key = codecs.encode(key, 'base64')
+        key = Fernet.generate_key()
         fernet = Fernet(key)
         data = key + fernet.encrypt(data)
 
@@ -140,8 +141,8 @@ def buildResources():
 
     notify.info('All resources built successfully!')
 
-def copyRequiredFiles():
-    notify.info('Copying required files...')
+def copyRequiredGameFiles():
+    notify.info('Copying required game files...')
     os.chdir(ROOT_DIR)
     if not os.path.exists(PANDA3D_DIR):
         return
@@ -156,6 +157,12 @@ def copyRequiredFiles():
     for pandaDll in pandaDlls:
         shutil.copy(os.path.join(PANDA3D_DIR, 'bin', pandaDll), os.path.join(BUILT_DIR, 'funnyfarm.dist'))
 
+    notify.info('Done!')
+
+
+def copyRequiredResourceFiles():
+    notify.info('Copying required game files...')
+    os.chdir(ROOT_DIR)
     resourcesDir = os.path.join(BUILT_DIR, 'resources')
     builtResourcesDir = os.path.join(BUILT_DIR, 'funnyfarm.dist', 'resources')
     if not os.path.exists(builtResourcesDir):
@@ -165,11 +172,13 @@ def copyRequiredFiles():
     for phase in phases:
         shutil.copy(os.path.join(resourcesDir, phase), builtResourcesDir)
 
-    notify.info('Done!')
 
+if args.game:
+    copyBuildFiles()
+    generateGameData()
+    buildGame()
+    copyRequiredGameFiles()
 
-copyBuildFiles()
-generateGameData()
-buildGame()
-buildResources()
-copyRequiredFiles()
+if args.resources:
+    buildResources()
+    copyRequiredResourceFiles()
