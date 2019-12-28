@@ -3,7 +3,7 @@ from cryptography.fernet import Fernet
 import gamedata
 
 # Config
-key, prc = gamedata.CONFIG[0:45], gamedata.CONFIG[45:]
+key, prc = gamedata.CONFIG[0:44], gamedata.CONFIG[44:]
 fernet = Fernet(key)
 prc = fernet.decrypt(prc)
 loadPrcFileData('game config', prc)
