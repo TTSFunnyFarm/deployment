@@ -21,6 +21,9 @@ args = parser.parse_args()
 notify = DirectNotifyGlobal.directNotify.newCategory('FunnyFarmMake')
 notify.setInfo(True)
 
+if sys.platform not in ('win32', 'darwin'):
+    notify.error('Platform not supported: %s' % sys.platform)
+
 if (args.game or args.dist) and not args.version:
     notify.error('Cannot build game or dist files without a game version. Use --version to set a game version.')
 
@@ -50,7 +53,7 @@ def generateGameData():
         return
 
     notify.info('Generating config data...')
-    
+
     with open(configFile, 'r') as f:
         configData = f.read()
 
@@ -77,6 +80,10 @@ def copyBuildFiles():
     if not os.path.exists(FUNNY_FARM_SRC_DIR):
         return
 
+    libotp = os.path.join(FUNNY_FARM_SRC_DIR, 'libotp')
+    if not os.path.exists(libotp):
+        return
+
     otpDir = os.path.join(FUNNY_FARM_SRC_DIR, 'otp')
     if not os.path.exists(otpDir):
         return
@@ -85,6 +92,7 @@ def copyBuildFiles():
     if not os.path.exists(toontownDir):
         return
 
+    shutil.copytree(libotp, os.path.join(BUILT_DIR, 'libotp'))
     shutil.copytree(otpDir, os.path.join(BUILT_DIR, 'otp'))
     shutil.copytree(toontownDir, os.path.join(BUILT_DIR, 'toontown'))
 
