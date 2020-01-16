@@ -102,7 +102,7 @@ class FunnyFarmCompilerBase:
             return
 
         self.notify.info('Building the resources...')
-        destDir = os.path.join(self.rootDir, self.workingDir, '%s.dist' % os.path.splitext(os.path.basename(self.mainFile))[0], 'resources')
+        destDir = os.path.join(self.rootDir, self.workingDir, 'built', 'resources')
         if not os.path.exists(destDir):
             os.makedirs(destDir)
 
@@ -145,7 +145,7 @@ class FunnyFarmCompilerDarwin(FunnyFarmCompilerBase):
 
 
 parser = argparse.ArgumentParser(description='Build script for Toontown\'s Funny Farm')
-parser.add_argument('--version', '-v', help='Game version')
+parser.add_argument('--version', '-v', help='Game version', required=True)
 parser.add_argument('--resources', '-r', help='Builds the game resources (phases).', action='store_true')
 parser.add_argument('--game', '-g', help='Builds the game source code.', action='store_true')
 parser.add_argument('--dist', '-d', help='Generate dist (patch manifest) files.', action='store_true')
@@ -155,22 +155,18 @@ args = parser.parse_args()
 if sys.platform not in ('win32', 'darwin'):
     raise Exception('Platform not supported: %s' % sys.platform)
 
-if (args.game or args.dist) and not args.version:
-    raise Exception('Cannot build game or dist files without a game version. Use --version to set a game version.')
-
 if (args.game or args.dist or args.resources):
     if sys.platform == 'win32':
         compiler = FunnyFarmCompilerWindows(args.version)
     elif sys.platform == 'darwin':
         compiler = FunnyFarmCompilerDarwin(args.version)
 
-    compiler.setMainFile(os.path.join(compiler.dataDir, 'funnyfarm.py'))
-
 if args.game:
     compiler.generateGameData(os.path.join('config', 'release.prc'))
     compiler.addSourceDir('libotp')
     compiler.addSourceDir('otp')
     compiler.addSourceDir('toontown')
+    compiler.setMainFile(os.path.join(compiler.dataDir, 'funnyfarm.py'))
     compiler.copyBuildFiles()
     compiler.buildGame()
     compiler.copyRequiredGameFiles()
