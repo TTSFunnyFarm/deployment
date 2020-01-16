@@ -2,6 +2,7 @@ assert not __debug__  # Run with -OO
 
 import argparse
 import os
+import shutil
 import sys
 
 from cryptography.fernet import Fernet
@@ -19,6 +20,16 @@ class FunnyFarmCompilerBase:
         self.builtDir = os.path.join(self.rootDir, 'built')
         if not os.path.exists(self.builtDir):
             os.makedirs(self.builtDir)
+
+        self.sourceDirs = []
+        self.mainFile = None
+
+    def addSourceDir(self, sourceDir):
+        if sourceDir not in self.sourceDirs:
+            self.sourceDirs.append(sourceDir)
+
+    def setMainFile(self, mainFile):
+        self.mainFile = mainFile
 
     def encryptData(self, data):
         key = Fernet.generate_key()
@@ -44,6 +55,24 @@ class FunnyFarmCompilerBase:
             f.write(gameData)
             f.close()
 
+    def removeOldBuildFiles(self):
+        if os.path.exists(self.builtDir):
+            self.notify.info('Cleaning up old build files...')
+            shutil.rmtree(self.builtDir)
+
+    def copyBuildFiles(self):
+        self.removeOldBuildFiles()
+        self.notify.info('Copying build files...')
+        for sourceDir in self.sourceDirs:
+            filepath = os.path.join(self.baseDir, sourceDir)
+            if not os.path.exists(filepath):
+                continue
+
+            shutil.copytree(filepath, os.path.join(self.builtDir, sourceDir))
+
+        if os.path.exists(self.mainFile):
+            shutil.copy(self.mainFile, self.builtDir)
+
 
 parser = argparse.ArgumentParser(description='Build script for Toontown\'s Funny Farm')
 parser.add_argument('--version', '-v', help='Game version')
@@ -64,3 +93,8 @@ if (args.game or args.dist or args.resources):
 
 if args.game:
     compiler.generateGameData(os.path.join('config', 'release.prc'))
+    compiler.addSourceDir('libotp')
+    compiler.addSourceDir('otp')
+    compiler.addSourceDir('toontown')
+    compiler.setMainFile(os.path.join(compiler.dataDir, 'funnyfarm.py'))
+    compiler.copyBuildFiles()
