@@ -3,6 +3,7 @@ assert not __debug__  # Run with -OO
 import argparse
 import os
 import shutil
+import subprocess
 import sys
 
 from cryptography.fernet import Fernet
@@ -73,6 +74,17 @@ class FunnyFarmCompilerBase:
         if os.path.exists(self.mainFile):
             shutil.copy(self.mainFile, self.builtDir)
 
+    def buildGame(self):
+        self.notify.info('Building the game...')
+        try:
+            import nuitka
+        except:
+            raise ModuleNotFoundError('Nuitka was not found! Please install Nuitka via pip.')
+
+        returnCode = subprocess.check_call([sys.executable, '-OO', '-m', 'nuitka', '--standalone', '--file-reference-choice=frozen', '--show-progress', '--show-scons', '--follow-imports', '--python-flag=-S,-OO', '%s' % self.mainFile], cwd=self.builtDir)
+        if returnCode == 0:
+            self.notify.info('Build finished successfully!')
+
 
 parser = argparse.ArgumentParser(description='Build script for Toontown\'s Funny Farm')
 parser.add_argument('--version', '-v', help='Game version')
@@ -98,3 +110,4 @@ if args.game:
     compiler.addSourceDir('toontown')
     compiler.setMainFile(os.path.join(compiler.dataDir, 'funnyfarm.py'))
     compiler.copyBuildFiles()
+    compiler.buildGame()
