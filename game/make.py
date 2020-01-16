@@ -18,7 +18,7 @@ class FunnyFarmCompilerBase:
         self.rootDir = os.getcwd()
         self.baseDir = os.path.join(self.rootDir, 'Toontowns-Funny-Farm')
         self.dataDir = os.path.join(self.rootDir, 'data')
-        self.builtDir = os.path.join(self.rootDir, 'built')
+        self.builtDir = os.path.join(self.rootDir, 'builds', self.version, 'built')
         if not os.path.exists(self.builtDir):
             os.makedirs(self.builtDir)
 
