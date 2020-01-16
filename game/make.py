@@ -23,6 +23,7 @@ class FunnyFarmCompilerBase:
             os.makedirs(self.workingDir)
 
         self.panda3dDevDir = os.path.join(self.rootDir, 'funny-farm-panda3d', 'built_dev')
+        self.panda3dProdDir = None
         self.sourceDirs = []
         self.mainFile = None
 
@@ -131,6 +132,7 @@ class FunnyFarmCompilerWindows(FunnyFarmCompilerBase):
     def __init__(self, version, arch):
         FunnyFarmCompilerBase.__init__(self, version)
         self.arch = arch
+        self.panda3dProdDir = os.path.join(self.rootDir, 'funny-farm-panda3d', 'built_prod_%s' % self.arch)
 
 
 class FunnyFarmCompilerDarwin(FunnyFarmCompilerBase):
@@ -138,6 +140,7 @@ class FunnyFarmCompilerDarwin(FunnyFarmCompilerBase):
 
     def __init__(self, version):
         FunnyFarmCompilerBase.__init__(self, version)
+        self.panda3dProdDir = os.path.join(self.rootDir, 'funny-farm-panda3d', 'built_prod_darwin')
 
 
 parser = argparse.ArgumentParser(description='Build script for Toontown\'s Funny Farm')
