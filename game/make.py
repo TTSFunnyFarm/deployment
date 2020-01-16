@@ -18,9 +18,9 @@ class FunnyFarmCompilerBase:
         self.rootDir = os.getcwd()
         self.baseDir = os.path.join(self.rootDir, 'Toontowns-Funny-Farm')
         self.dataDir = os.path.join(self.rootDir, 'data')
-        self.builtDir = os.path.join(self.rootDir, 'builds', self.version, 'built')
-        if not os.path.exists(self.builtDir):
-            os.makedirs(self.builtDir)
+        self.workingDir = os.path.join(self.rootDir, 'builds', self.version)
+        if not os.path.exists(self.workingDir):
+            os.makedirs(self.workingDir)
 
         self.panda3dDir = None
         self.sourceDirs = []
@@ -53,14 +53,14 @@ class FunnyFarmCompilerBase:
         configData = configData.replace('%GAME_VERSION%', self.version)
         configData = self.encryptData(configData.encode('utf-8'))
         gameData = 'CONFIG = %r\n' % configData
-        with open(os.path.join(self.builtDir, 'gamedata.py'), 'w') as f:
+        with open(os.path.join(self.workingDir, 'gamedata.py'), 'w') as f:
             f.write(gameData)
             f.close()
 
     def removeOldBuildFiles(self):
-        if os.path.exists(self.builtDir):
+        if os.path.exists(self.workingDir):
             self.notify.info('Cleaning up old build files...')
-            shutil.rmtree(self.builtDir)
+            shutil.rmtree(self.workingDir)
 
     def copyBuildFiles(self):
         self.removeOldBuildFiles()
@@ -70,10 +70,10 @@ class FunnyFarmCompilerBase:
             if not os.path.exists(filepath):
                 continue
 
-            shutil.copytree(filepath, os.path.join(self.builtDir, sourceDir))
+            shutil.copytree(filepath, os.path.join(self.workingDir, sourceDir))
 
         if os.path.exists(self.mainFile):
-            shutil.copy(self.mainFile, self.builtDir)
+            shutil.copy(self.mainFile, self.workingDir)
 
     def buildGame(self):
         self.notify.info('Building the game...')
@@ -82,7 +82,7 @@ class FunnyFarmCompilerBase:
         except:
             raise ModuleNotFoundError('Nuitka was not found! Please install Nuitka via pip.')
 
-        returnCode = subprocess.check_call([sys.executable, '-OO', '-m', 'nuitka', '--standalone', '--file-reference-choice=frozen', '--show-progress', '--show-scons', '--follow-imports', '--python-flag=-S,-OO', '%s' % self.mainFile], cwd=self.builtDir)
+        returnCode = subprocess.check_call([sys.executable, '-OO', '-m', 'nuitka', '--standalone', '--file-reference-choice=frozen', '--show-progress', '--show-scons', '--follow-imports', '--python-flag=-S,-OO', '%s' % self.mainFile], cwd=self.workingDir)
         if returnCode == 0:
             self.notify.info('Build finished successfully!')
 
@@ -94,7 +94,7 @@ class FunnyFarmCompilerBase:
             return
 
         self.notify.info('Building the resources...')
-        destDir = os.path.join(self.rootDir, self.builtDir, '%s.dist' % os.path.splitext(os.path.basename(self.mainFile))[0], 'resources')
+        destDir = os.path.join(self.rootDir, self.workingDir, '%s.dist' % os.path.splitext(os.path.basename(self.mainFile))[0], 'resources')
         if not os.path.exists(destDir):
             os.makedirs(destDir)
 
