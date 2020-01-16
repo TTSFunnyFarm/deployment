@@ -22,6 +22,7 @@ class FunnyFarmCompilerBase:
         if not os.path.exists(self.builtDir):
             os.makedirs(self.builtDir)
 
+        self.panda3dDir = None
         self.sourceDirs = []
         self.mainFile = None
 
@@ -85,6 +86,43 @@ class FunnyFarmCompilerBase:
         if returnCode == 0:
             self.notify.info('Build finished successfully!')
 
+    def buildResources(self):
+        if not self.panda3dDir:
+            self.notify.error('Panda3D directory not set! Unable to build resources.')
+
+        if not os.path.exists(self.panda3dDir):
+            return
+
+        self.notify.info('Building the resources...')
+        destDir = os.path.join(self.rootDir, self.builtDir, '%s.dist' % os.path.splitext(os.path.basename(self.mainFile))[0], 'resources')
+        if not os.path.exists(destDir):
+            os.makedirs(destDir)
+
+        resourcesDir = os.path.join(self.baseDir, 'resources')
+        for phase in os.listdir(resourcesDir):
+            if not phase.startswith('phase_'):
+                continue
+
+            phasePath = os.path.join(resourcesDir, phase)
+            if not os.path.isdir(phasePath):
+                continue
+
+            filename = phase + '.mf'
+            filepath = os.path.join(destDir, filename)
+            returnCode = subprocess.check_call([os.path.join(self.panda3dDir, 'bin', 'multify'), '-c', '-f', filepath, phasePath])
+            if returnCode == 0:
+                self.notify.info('%s built successfully!' % phase)
+
+        self.notify.info('All resources built successfully!')
+
+
+class FunnyFarmCompilerDarwin(FunnyFarmCompilerBase):
+    notify = DirectNotifyGlobal.directNotify.newCategory('FunnyFarmCompilerDarwin')
+
+    def __init__(self, version):
+        FunnyFarmCompilerBase.__init__(self, version)
+        self.panda3dDir = os.path.join(self.rootDir, 'funny-farm-panda3d', 'built_dev')
+
 
 parser = argparse.ArgumentParser(description='Build script for Toontown\'s Funny Farm')
 parser.add_argument('--version', '-v', help='Game version')
@@ -101,13 +139,20 @@ if (args.game or args.dist) and not args.version:
     raise Exception('Cannot build game or dist files without a game version. Use --version to set a game version.')
 
 if (args.game or args.dist or args.resources):
-    compiler = FunnyFarmCompilerBase(args.version)
+    if sys.platform == 'darwin':
+        compiler = FunnyFarmCompilerDarwin(args.version)
+    else:
+        compiler = FunnyFarmCompilerBase(args.version)
+
+    compiler.setMainFile(os.path.join(compiler.dataDir, 'funnyfarm.py'))
 
 if args.game:
     compiler.generateGameData(os.path.join('config', 'release.prc'))
     compiler.addSourceDir('libotp')
     compiler.addSourceDir('otp')
     compiler.addSourceDir('toontown')
-    compiler.setMainFile(os.path.join(compiler.dataDir, 'funnyfarm.py'))
     compiler.copyBuildFiles()
     compiler.buildGame()
+
+if args.resources:
+    compiler.buildResources()
