@@ -90,7 +90,7 @@ class FunnyFarmCompilerBase:
         except:
             raise ModuleNotFoundError('Nuitka was not found! Please install Nuitka via pip.')
 
-        returnCode = subprocess.check_call([sys.executable, '-OO', '-m', 'nuitka', '--standalone', '--file-reference-choice=frozen', '--show-progress', '--show-scons', '--follow-imports', '--python-flag=-S,-OO', '%s' % self.mainFile], cwd=self.workingDir)
+        returnCode = subprocess.check_call([sys.executable, '-OO', '-m', 'nuitka', '--standalone', '--file-reference-choice=frozen', '--show-progress', '--show-scons', '--follow-imports', '--python-flag=-S,-OO', '%s' % os.path.basename(self.mainFile)], cwd=self.workingDir)
         if returnCode == 0:
             self.notify.info('Build finished successfully!')
 
@@ -131,8 +131,9 @@ class FunnyFarmCompilerBase:
 class FunnyFarmCompilerWindows(FunnyFarmCompilerBase):
     notify = DirectNotifyGlobal.directNotify.newCategory('FunnyFarmCompilerWindows')
 
-    def __init__(self, version):
+    def __init__(self, version, arch):
         FunnyFarmCompilerBase.__init__(self, version)
+        self.arch = arch
         self.panda3dDir = os.path.abspath(os.path.join(os.path.dirname(sys.executable), '..'))
 
 
@@ -149,6 +150,8 @@ parser.add_argument('--version', '-v', help='Game version', required=True)
 parser.add_argument('--resources', '-r', help='Builds the game resources (phases).', action='store_true')
 parser.add_argument('--game', '-g', help='Builds the game source code.', action='store_true')
 parser.add_argument('--dist', '-d', help='Generate dist (patch manifest) files.', action='store_true')
+if sys.platform == 'win32':
+    parser.add_argument('--arch', '-a', help='Target architecture', choices=['win32', 'win64'], required=True)
 
 args = parser.parse_args()
 
@@ -157,7 +160,7 @@ if sys.platform not in ('win32', 'darwin'):
 
 if (args.game or args.dist or args.resources):
     if sys.platform == 'win32':
-        compiler = FunnyFarmCompilerWindows(args.version)
+        compiler = FunnyFarmCompilerWindows(args.version, args.arch)
     elif sys.platform == 'darwin':
         compiler = FunnyFarmCompilerDarwin(args.version)
 
