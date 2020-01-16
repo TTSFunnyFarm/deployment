@@ -132,6 +132,7 @@ class FunnyFarmCompilerWindows(FunnyFarmCompilerBase):
     def __init__(self, version, arch):
         FunnyFarmCompilerBase.__init__(self, version)
         self.arch = arch
+        self.workingDir = os.path.join(self.workingDir, self.arch)
         self.panda3dProdDir = os.path.join(self.rootDir, 'funny-farm-panda3d', 'built_prod_%s' % self.arch)
 
 
