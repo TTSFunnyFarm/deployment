@@ -22,7 +22,7 @@ class FunnyFarmCompilerBase:
         if not os.path.exists(self.workingDir):
             os.makedirs(self.workingDir)
 
-        self.panda3dDir = None
+        self.panda3dDevDir = os.path.join(self.rootDir, 'funny-farm-panda3d', 'built_dev')
         self.sourceDirs = []
         self.mainFile = None
 
@@ -95,11 +95,8 @@ class FunnyFarmCompilerBase:
             self.notify.info('Build finished successfully!')
 
     def buildResources(self):
-        if not self.panda3dDir:
-            self.notify.error('Panda3D directory not set! Unable to build resources.')
-
-        if not os.path.exists(self.panda3dDir):
-            return
+        if not os.path.exists(self.panda3dDevDir):
+            self.notify.error('Panda3D development SDK not found! Unable to build resources.')
 
         self.notify.info('Building the resources...')
         destDir = os.path.join(self.rootDir, self.workingDir, 'built', 'resources')
@@ -117,7 +114,7 @@ class FunnyFarmCompilerBase:
 
             filename = phase + '.mf'
             filepath = os.path.join(destDir, filename)
-            returnCode = subprocess.check_call([os.path.join(self.panda3dDir, 'bin', 'multify'), '-c', '-f', filepath, phasePath])
+            returnCode = subprocess.check_call([os.path.join(self.panda3dDevDir, 'bin', 'multify'), '-c', '-f', filepath, phasePath])
             if returnCode == 0:
                 self.notify.info('%s built successfully!' % phase)
 
@@ -134,7 +131,6 @@ class FunnyFarmCompilerWindows(FunnyFarmCompilerBase):
     def __init__(self, version, arch):
         FunnyFarmCompilerBase.__init__(self, version)
         self.arch = arch
-        self.panda3dDir = os.path.abspath(os.path.join(os.path.dirname(sys.executable), '..'))
 
 
 class FunnyFarmCompilerDarwin(FunnyFarmCompilerBase):
@@ -142,7 +138,6 @@ class FunnyFarmCompilerDarwin(FunnyFarmCompilerBase):
 
     def __init__(self, version):
         FunnyFarmCompilerBase.__init__(self, version)
-        self.panda3dDir = os.path.join(self.rootDir, 'funny-farm-panda3d', 'built_dev')
 
 
 parser = argparse.ArgumentParser(description='Build script for Toontown\'s Funny Farm')
