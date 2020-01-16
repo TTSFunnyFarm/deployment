@@ -60,7 +60,15 @@ class FunnyFarmCompilerBase:
     def removeOldBuildFiles(self):
         if os.path.exists(self.workingDir):
             self.notify.info('Cleaning up old build files...')
-            shutil.rmtree(self.workingDir)
+            for item in os.listdir(self.workingDir):
+                if item == 'built':
+                    continue
+
+                itemPath = os.path.join(self.workingDir, item)
+                if os.path.isdir(itemPath):
+                    shutil.rmtree(itemPath)
+                else:
+                    os.remove(itemPath)
 
     def copyBuildFiles(self):
         self.removeOldBuildFiles()
