@@ -115,6 +115,18 @@ class FunnyFarmCompilerBase:
 
         self.notify.info('All resources built successfully!')
 
+    def copyRequiredGameFiles(self):
+        # This is entirely platform dependent and must be overriden by subclass.
+        raise NotImplementedError('copyRequiredGameFiles')
+
+
+class FunnyFarmCompilerWindows(FunnyFarmCompilerBase):
+    notify = DirectNotifyGlobal.directNotify.newCategory('FunnyFarmCompilerWindows')
+
+    def __init__(self, version):
+        FunnyFarmCompilerBase.__init__(self, version)
+        self.panda3dDir = os.path.abspath(os.path.join(os.path.dirname(sys.executable), '..'))
+
 
 class FunnyFarmCompilerDarwin(FunnyFarmCompilerBase):
     notify = DirectNotifyGlobal.directNotify.newCategory('FunnyFarmCompilerDarwin')
@@ -139,10 +151,10 @@ if (args.game or args.dist) and not args.version:
     raise Exception('Cannot build game or dist files without a game version. Use --version to set a game version.')
 
 if (args.game or args.dist or args.resources):
-    if sys.platform == 'darwin':
+    if sys.platform == 'win32':
+        compiler = FunnyFarmCompilerWindows(args.version)
+    elif sys.platform == 'darwin':
         compiler = FunnyFarmCompilerDarwin(args.version)
-    else:
-        compiler = FunnyFarmCompilerBase(args.version)
 
     compiler.setMainFile(os.path.join(compiler.dataDir, 'funnyfarm.py'))
 
@@ -153,6 +165,7 @@ if args.game:
     compiler.addSourceDir('toontown')
     compiler.copyBuildFiles()
     compiler.buildGame()
+    compiler.copyRequiredGameFiles()
 
 if args.resources:
     compiler.buildResources()
