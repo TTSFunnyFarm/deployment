@@ -125,6 +125,9 @@ class FunnyFarmCompilerBase:
 
     def run(self, command):
         self.builtDir = os.path.join(self.workingDir, 'built')
+        if not os.path.exists(self.builtDir):
+            os.makedirs(self.builtDir)
+
         if command == 'buildGame':
             self.copyBuildFiles()
             self.generateGameData(self.configFile)
