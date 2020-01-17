@@ -1,6 +1,7 @@
 assert not __debug__  # Run with -OO
 
 import argparse
+import bz2
 from collections import OrderedDict
 import hashlib
 import json
@@ -131,6 +132,10 @@ class FunnyFarmCompilerBase:
 
         self.notify.info('All resources built successfully!')
 
+    def getDistributables(self):
+        # This is entirely platform dependent and must be overriden by subclass.
+        raise NotImplementedError('getDistributables')
+
     def getFileMD5Hash(self, filepath):
         md5 = hashlib.md5()
         readBlock = lambda: f.read(128 * md5.block_size)
@@ -139,10 +144,6 @@ class FunnyFarmCompilerBase:
                 md5.update(chunk)
 
         return md5.hexdigest()
-
-    def getDistributables(self):
-        # This is entirely platform dependent and must be overriden by subclass.
-        raise NotImplementedError('getDistributables')
 
     def writeManifest(self):
         self.notify.info('Writing patch manifest...')
@@ -177,6 +178,32 @@ class FunnyFarmCompilerBase:
         os.chdir(self.rootDir)
         self.notify.info('Successfully wrote patch manifest.')
 
+    def compressFile(self, filepath):
+        distDir = os.path.join(self.builtDir, 'dist')
+        with open(filepath, 'rb') as f:
+            data = f.read()
+
+        filename = os.path.basename(filepath)
+        directory = os.path.dirname(filepath)
+        if not os.path.exists(os.path.join(distDir, directory)):
+            os.makedirs(os.path.join(distDir, directory))
+
+        bz2Filename = filename + '.bz2'
+        bz2Filepath = os.path.join(distDir, directory, bz2Filename)
+        f = bz2.BZ2File(bz2Filepath, 'w')
+        f.write(data)
+        f.close()
+
+    def compressFiles(self):
+        self.notify.info('Compressing distributables...')
+        os.chdir(self.builtDir)
+        for filepath in self.getDistributables():
+            self.notify.info('Compressing: %s' % filepath)
+            self.compressFile(filepath)
+
+        os.chdir(self.rootDir)
+        self.notify.info('Successfully compressed distributables.')
+
     def buildDist(self):
         self.notify.info('Building distributables...')
         distDir = os.path.join(self.builtDir, 'dist')
@@ -184,6 +211,7 @@ class FunnyFarmCompilerBase:
             os.makedirs(distDir)
 
         self.writeManifest()
+        self.compressFiles()
 
         self.notify.info('Done building distributables.')
 
