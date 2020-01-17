@@ -24,6 +24,7 @@ class FunnyFarmCompilerBase:
         self.panda3dProdDir = None
         self.sourceDirs = []
         self.mainFile = None
+        self.configFile = None
 
     def addSourceDir(self, sourceDir):
         if sourceDir not in self.sourceDirs:
@@ -31,6 +32,9 @@ class FunnyFarmCompilerBase:
 
     def setMainFile(self, mainFile):
         self.mainFile = mainFile
+
+    def setConfigFile(self, configFile):
+        self.configFile = configFile
 
     def encryptData(self, data):
         key = Fernet.generate_key()
@@ -126,6 +130,17 @@ class FunnyFarmCompilerBase:
         # This is entirely platform dependent and must be overriden by subclass.
         raise NotImplementedError('copyToBuiltDir')
 
+    def run(self, command):
+        if command == 'buildGame':
+            self.copyBuildFiles()
+            self.generateGameData(self.configFile)
+            self.compileGame()
+            self.copyToBuiltDir()
+        elif command == 'buildResources':
+            self.buildResources()
+        else:
+            self.notify.error('Unknown command: %s' % command)
+
 
 class FunnyFarmCompilerWindows(FunnyFarmCompilerBase):
     notify = DirectNotifyGlobal.directNotify.newCategory('FunnyFarmCompilerWindows')
@@ -135,6 +150,22 @@ class FunnyFarmCompilerWindows(FunnyFarmCompilerBase):
         self.arch = arch
         self.workingDir = os.path.join(self.workingDir, self.arch)
         self.panda3dProdDir = os.path.join(self.rootDir, 'funny-farm-panda3d', 'built_prod_%s' % self.arch)
+
+    def removeOldBuildFiles(self):
+        # on windows we want to preserve the build directory
+        # as it contains cache which will speed up the build
+        # process if we need to build the game again.
+        if os.path.exists(self.workingDir):
+            self.notify.info('Cleaning up old build files...')
+            for item in os.listdir(self.workingDir):
+                if item == 'built' or item == '%s.build' % os.path.splitext(os.path.basename(self.mainFile))[0]:
+                    continue
+
+                itemPath = os.path.join(self.workingDir, item)
+                if os.path.isdir(itemPath):
+                    shutil.rmtree(itemPath)
+                else:
+                    os.remove(itemPath)
 
     def copyToBuiltDir(self):
         self.notify.info('Copying to built directory...')
@@ -228,10 +259,8 @@ if args.game:
     compiler.addSourceDir('otp')
     compiler.addSourceDir('toontown')
     compiler.setMainFile(os.path.join(compiler.dataDir, 'funnyfarm.py'))
-    compiler.copyBuildFiles()
-    compiler.generateGameData(os.path.join('config', 'release.prc'))
-    compiler.buildGame()
-    compiler.copyToBuiltDir()
+    compiler.setConfigFile(os.path.join('config', 'release.prc'))
+    compiler.run('buildGame')
 
 if args.resources:
-    compiler.buildResources()
+    compiler.run('buildResources')
