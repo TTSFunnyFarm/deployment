@@ -16,8 +16,9 @@ from direct.directnotify import DirectNotifyGlobal
 class FunnyFarmCompilerBase:
     notify = DirectNotifyGlobal.directNotify.newCategory('FunnyFarmCompilerBase')
 
-    def __init__(self, version):
+    def __init__(self, version, launcherVersion):
         self.version = version
+        self.launcherVersion = launcherVersion
         self.rootDir = os.getcwd()
         self.baseDir = os.path.join(self.rootDir, 'Toontowns-Funny-Farm')
         self.dataDir = os.path.join(self.rootDir, 'data')
@@ -163,6 +164,11 @@ class FunnyFarmCompilerBase:
         self.notify.info('game-version: %s' % gameVersion)
         manifest['game-version'] = gameVersion
 
+        launcherVersion = self.launcherVersion.strip('v')
+        self.notify.info('Writing launcher-version...')
+        self.notify.info('launcher-version: %s' % launcherVersion)
+        manifest['launcher-version'] = launcherVersion
+
         self.notify.info('Writing the patch manifest data to manifest.json...')
         with open(os.path.join(distDir, 'manifest.json'), 'w') as f:
             f.write(json.dumps(manifest, indent=4))
@@ -202,8 +208,8 @@ class FunnyFarmCompilerBase:
 class FunnyFarmCompilerWindows(FunnyFarmCompilerBase):
     notify = DirectNotifyGlobal.directNotify.newCategory('FunnyFarmCompilerWindows')
 
-    def __init__(self, version, arch):
-        FunnyFarmCompilerBase.__init__(self, version)
+    def __init__(self, version, launcherVersion, arch):
+        FunnyFarmCompilerBase.__init__(self, version, launcherVersion)
         self.arch = arch
         self.workingDir = os.path.join(self.workingDir, self.arch)
         self.panda3dProdDir = os.path.join(self.rootDir, 'funny-farm-panda3d', 'built_prod_%s' % self.arch)
@@ -332,16 +338,17 @@ class FunnyFarmCompilerWindows(FunnyFarmCompilerBase):
 class FunnyFarmCompilerDarwin(FunnyFarmCompilerBase):
     notify = DirectNotifyGlobal.directNotify.newCategory('FunnyFarmCompilerDarwin')
 
-    def __init__(self, version):
-        FunnyFarmCompilerBase.__init__(self, version)
+    def __init__(self, version, launcherVersion):
+        FunnyFarmCompilerBase.__init__(self, version, launcherVersion)
         self.panda3dProdDir = os.path.join(self.rootDir, 'funny-farm-panda3d', 'built_prod_darwin')
 
 
 parser = argparse.ArgumentParser(description='Build script for Toontown\'s Funny Farm')
 parser.add_argument('--version', '-v', help='Game version', required=True)
+parser.add_argument('--launcher', '-l', help='Launcher version')
 parser.add_argument('--resources', '-r', help='Builds the game resources (phases).', action='store_true')
 parser.add_argument('--game', '-g', help='Builds the game source code.', action='store_true')
-parser.add_argument('--dist', '-d', help='Generate dist (patch manifest) files.', action='store_true')
+parser.add_argument('--dist', '-d', help='Generate distributable (patch manifest) files.', action='store_true')
 if sys.platform == 'win32':
     parser.add_argument('--arch', '-a', help='Target architecture', choices=['win32', 'win64'], required=True)
 
@@ -350,11 +357,14 @@ args = parser.parse_args()
 if sys.platform not in ('win32', 'darwin'):
     raise Exception('Platform not supported: %s' % sys.platform)
 
+if args.dist and not args.launcher:
+    raise Exception('Launcher version must be set to build distributables!')
+
 if (args.game or args.dist or args.resources):
     if sys.platform == 'win32':
-        compiler = FunnyFarmCompilerWindows(args.version, args.arch)
+        compiler = FunnyFarmCompilerWindows(args.version, args.launcher, args.arch)
     elif sys.platform == 'darwin':
-        compiler = FunnyFarmCompilerDarwin(args.version)
+        compiler = FunnyFarmCompilerDarwin(args.version, args.launcher)
 
 if args.game:
     compiler.addSourceDir('libotp')
