@@ -18,13 +18,16 @@ class FunnyFarmCompilerBase:
         self.rootDir = os.getcwd()
         self.baseDir = os.path.join(self.rootDir, 'Toontowns-Funny-Farm')
         self.dataDir = os.path.join(self.rootDir, 'data')
-        self.workingDir = os.path.join(self.rootDir, 'builds', self.version)
-        self.builtDir = None
+        self.workingDir = self.getWorkingDir()
+        self.builtDir = os.path.join(self.workingDir, 'built')
         self.panda3dDevDir = os.path.join(self.rootDir, 'funny-farm-panda3d', 'built_dev')
         self.panda3dProdDir = None
         self.sourceDirs = []
         self.mainFile = None
         self.configFile = None
+
+    def getWorkingDir(self):
+        return os.path.join(self.rootDir, 'builds', self.version)
 
     def addSourceDir(self, sourceDir):
         if sourceDir not in self.sourceDirs:
@@ -35,33 +38,6 @@ class FunnyFarmCompilerBase:
 
     def setConfigFile(self, configFile):
         self.configFile = configFile
-
-    def encryptData(self, data):
-        key = Fernet.generate_key()
-        fernet = Fernet(key)
-        data = key + fernet.encrypt(data)
-        return data
-
-    def generateGameData(self, configPath):
-        configFile = os.path.join(self.baseDir, configPath)
-        if not os.path.exists(configFile):
-            return
-
-        self.notify.info('Generating config data...')
-
-        if not os.path.exists(self.workingDir):
-            os.makedirs(self.workingDir)
-
-        with open(configFile, 'r') as f:
-            configData = f.read()
-            f.close()
-
-        configData = configData.replace('%GAME_VERSION%', self.version)
-        configData = self.encryptData(configData.encode('utf-8'))
-        gameData = 'CONFIG = %r\n' % configData
-        with open(os.path.join(self.workingDir, 'gamedata.py'), 'w') as f:
-            f.write(gameData)
-            f.close()
 
     def removeOldBuildFiles(self):
         if os.path.exists(self.workingDir):
@@ -78,10 +54,6 @@ class FunnyFarmCompilerBase:
 
     def copyBuildFiles(self):
         self.removeOldBuildFiles()
-        self.builtDir = os.path.join(self.workingDir, 'built')
-        if not os.path.exists(self.builtDir):
-            os.makedirs(self.builtDir)
-
         self.notify.info('Copying build files...')
         for sourceDir in self.sourceDirs:
             filepath = os.path.join(self.baseDir, sourceDir)
@@ -93,6 +65,30 @@ class FunnyFarmCompilerBase:
         if os.path.exists(self.mainFile):
             shutil.copy(self.mainFile, self.workingDir)
 
+    def encryptData(self, data):
+        key = Fernet.generate_key()
+        fernet = Fernet(key)
+        data = key + fernet.encrypt(data)
+        return data
+
+    def generateGameData(self, configPath):
+        configFile = os.path.join(self.baseDir, configPath)
+        if not os.path.exists(configFile):
+            return
+
+        self.notify.info('Generating config data...')
+
+        with open(configFile, 'r') as f:
+            configData = f.read()
+            f.close()
+
+        configData = configData.replace('%GAME_VERSION%', self.version)
+        configData = self.encryptData(configData.encode('utf-8'))
+        gameData = 'CONFIG = %r\n' % configData
+        with open(os.path.join(self.workingDir, 'gamedata.py'), 'w') as f:
+            f.write(gameData)
+            f.close()
+
     def buildGame(self):
         self.notify.info('Building the game...')
         try:
@@ -103,6 +99,10 @@ class FunnyFarmCompilerBase:
         returnCode = subprocess.check_call([sys.executable, '-OO', '-m', 'nuitka', '--standalone', '--file-reference-choice=frozen', '--show-progress', '--show-scons', '--follow-imports', '--python-flag=-S,-OO', '%s' % os.path.basename(self.mainFile)], cwd=self.workingDir)
         if returnCode == 0:
             self.notify.info('Build finished successfully!')
+
+    def copyToBuiltDir(self):
+        # This is entirely platform dependent and must be overriden by subclass.
+        raise NotImplementedError('copyToBuiltDir')
 
     def buildResources(self):
         if not os.path.exists(self.panda3dDevDir):
@@ -126,15 +126,11 @@ class FunnyFarmCompilerBase:
 
         self.notify.info('All resources built successfully!')
 
-    def copyToBuiltDir(self):
-        # This is entirely platform dependent and must be overriden by subclass.
-        raise NotImplementedError('copyToBuiltDir')
-
     def run(self, command):
         if command == 'buildGame':
             self.copyBuildFiles()
             self.generateGameData(self.configFile)
-            self.compileGame()
+            self.buildGame()
             self.copyToBuiltDir()
         elif command == 'buildResources':
             self.buildResources()
@@ -148,8 +144,10 @@ class FunnyFarmCompilerWindows(FunnyFarmCompilerBase):
     def __init__(self, version, arch):
         FunnyFarmCompilerBase.__init__(self, version)
         self.arch = arch
-        self.workingDir = os.path.join(self.workingDir, self.arch)
         self.panda3dProdDir = os.path.join(self.rootDir, 'funny-farm-panda3d', 'built_prod_%s' % self.arch)
+
+    def getWorkingDir(self):
+        return os.path.join(self.rootDir, 'builds', self.version, self.arch)
 
     def removeOldBuildFiles(self):
         # on windows we want to preserve the build directory
