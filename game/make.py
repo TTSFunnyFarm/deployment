@@ -1,6 +1,9 @@
 assert not __debug__  # Run with -OO
 
 import argparse
+from collections import OrderedDict
+import hashlib
+import json
 import os
 import shutil
 import subprocess
@@ -62,6 +65,8 @@ class FunnyFarmCompilerBase:
         if os.path.exists(self.mainFile):
             shutil.copy(self.mainFile, self.workingDir)
 
+        self.notify.info('Build files copied successfully.')
+
     def encryptData(self, data):
         key = Fernet.generate_key()
         fernet = Fernet(key)
@@ -85,6 +90,8 @@ class FunnyFarmCompilerBase:
         with open(os.path.join(self.workingDir, 'gamedata.py'), 'w') as f:
             f.write(gameData)
             f.close()
+
+        self.notify.info('Config data generated successfully.')
 
     def buildGame(self):
         self.notify.info('Building the game...')
@@ -123,6 +130,57 @@ class FunnyFarmCompilerBase:
 
         self.notify.info('All resources built successfully!')
 
+    def getFileMD5Hash(self, filepath):
+        md5 = hashlib.md5()
+        readBlock = lambda: f.read(128 * md5.block_size)
+        with open(filepath, 'rb') as f:
+            for chunk in iter(readBlock, b''):
+                md5.update(chunk)
+
+        return md5.hexdigest()
+
+    def getDistributables(self):
+        # This is entirely platform dependent and must be overriden by subclass.
+        raise NotImplementedError('getDistributables')
+
+    def writeManifest(self):
+        self.notify.info('Writing patch manifest...')
+        distDir = os.path.join(self.builtDir, 'dist')
+        os.chdir(self.builtDir)
+        manifest = OrderedDict()
+        manifest['files'] = OrderedDict()
+        self.notify.info('Writing files to patch manifest...')
+        for filepath in self.getDistributables():
+            self.notify.info('Adding %s...' % filepath)
+            manifest['files'][filepath] = OrderedDict()
+            manifest['files'][filepath]['path'] = os.path.dirname(filepath)
+            manifest['files'][filepath]['hash'] = self.getFileMD5Hash(filepath)
+
+        self.notify.info('Files written to patch manifest successfully.')
+
+        gameVersion = self.version.strip('v')
+        self.notify.info('Writing game-version...')
+        self.notify.info('game-version: %s' % gameVersion)
+        manifest['game-version'] = gameVersion
+
+        self.notify.info('Writing the patch manifest data to manifest.json...')
+        with open(os.path.join(distDir, 'manifest.json'), 'w') as f:
+            f.write(json.dumps(manifest, indent=4))
+            f.close()
+
+        os.chdir(self.rootDir)
+        self.notify.info('Successfully wrote patch manifest.')
+
+    def buildDist(self):
+        self.notify.info('Building distributables...')
+        distDir = os.path.join(self.builtDir, 'dist')
+        if not os.path.exists(distDir):
+            os.makedirs(distDir)
+
+        self.writeManifest()
+
+        self.notify.info('Done building distributables.')
+
     def run(self, command):
         self.builtDir = os.path.join(self.workingDir, 'built')
         if not os.path.exists(self.builtDir):
@@ -135,6 +193,8 @@ class FunnyFarmCompilerBase:
             self.copyToBuiltDir()
         elif command == 'buildResources':
             self.buildResources()
+        elif command == 'buildDist':
+            self.buildDist()
         else:
             self.notify.error('Unknown command: %s' % command)
 
@@ -223,6 +283,51 @@ class FunnyFarmCompilerWindows(FunnyFarmCompilerBase):
 
         self.notify.info('Successfully copied to built directory!')
 
+    def getDistributables(self):
+        distributables = [
+            'cg.dll',
+            'cgGL.dll',
+            'funnyfarm.exe',
+            'libcrypto-1_1.dll',
+            'libp3direct.dll',
+            'libp3dtool.dll',
+            'libp3dtoolconfig.dll',
+            'libp3interrogatedb.dll',
+            'libp3openal_audio.dll',
+            'libp3windisplay.dll',
+            'libpanda.dll',
+            'libpandaexpress.dll',
+            'libpandagl.dll',
+            'libpandaphysics.dll',
+            'libssl-1_1.dll',
+            'python37.dll',
+            'select.pyd',
+            '_cffi_backend.pyd',
+            '_socket.pyd',
+            '_ssl.pyd',
+            'resources/phase_3.5.mf',
+            'resources/phase_3.mf',
+            'resources/phase_4.mf',
+            'resources/phase_5.5.mf',
+            'resources/phase_5.mf',
+            'resources/phase_6.mf',
+            'resources/phase_7.mf',
+            'resources/phase_8.mf',
+            'resources/phase_9.mf',
+            'resources/phase_10.mf',
+            'resources/phase_11.mf',
+            'resources/phase_12.mf',
+            'resources/phase_13.mf',
+            'resources/phase_14.mf',
+            'panda3d/core.pyd',
+            'panda3d/direct.pyd',
+            'panda3d/physics.pyd',
+            'cryptography/hazmat/bindings/_constant_time.pyd',
+            'cryptography/hazmat/bindings/_openssl.pyd',
+            'cryptography/hazmat/bindings/_padding.pyd'
+        ]
+        return distributables
+
 
 class FunnyFarmCompilerDarwin(FunnyFarmCompilerBase):
     notify = DirectNotifyGlobal.directNotify.newCategory('FunnyFarmCompilerDarwin')
@@ -261,3 +366,6 @@ if args.game:
 
 if args.resources:
     compiler.run('buildResources')
+
+if args.dist:
+    compiler.run('buildDist')
