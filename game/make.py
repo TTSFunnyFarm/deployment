@@ -18,16 +18,13 @@ class FunnyFarmCompilerBase:
         self.rootDir = os.getcwd()
         self.baseDir = os.path.join(self.rootDir, 'Toontowns-Funny-Farm')
         self.dataDir = os.path.join(self.rootDir, 'data')
-        self.workingDir = self.getWorkingDir()
-        self.builtDir = os.path.join(self.workingDir, 'built')
+        self.workingDir = os.path.join(self.rootDir, 'builds', self.version)
+        self.builtDir = None
         self.panda3dDevDir = os.path.join(self.rootDir, 'funny-farm-panda3d', 'built_dev')
         self.panda3dProdDir = None
         self.sourceDirs = []
         self.mainFile = None
         self.configFile = None
-
-    def getWorkingDir(self):
-        return os.path.join(self.rootDir, 'builds', self.version)
 
     def addSourceDir(self, sourceDir):
         if sourceDir not in self.sourceDirs:
@@ -127,6 +124,7 @@ class FunnyFarmCompilerBase:
         self.notify.info('All resources built successfully!')
 
     def run(self, command):
+        self.builtDir = os.path.join(self.workingDir, 'built')
         if command == 'buildGame':
             self.copyBuildFiles()
             self.generateGameData(self.configFile)
@@ -144,10 +142,8 @@ class FunnyFarmCompilerWindows(FunnyFarmCompilerBase):
     def __init__(self, version, arch):
         FunnyFarmCompilerBase.__init__(self, version)
         self.arch = arch
+        self.workingDir = os.path.join(self.workingDir, self.arch)
         self.panda3dProdDir = os.path.join(self.rootDir, 'funny-farm-panda3d', 'built_prod_%s' % self.arch)
-
-    def getWorkingDir(self):
-        return os.path.join(self.rootDir, 'builds', self.version, self.arch)
 
     def removeOldBuildFiles(self):
         # on windows we want to preserve the build directory
