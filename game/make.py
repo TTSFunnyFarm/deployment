@@ -114,13 +114,9 @@ class FunnyFarmCompilerBase:
             if not phase.startswith('phase_'):
                 continue
 
-            phasePath = os.path.join(resourcesDir, phase)
-            if not os.path.isdir(phasePath):
-                continue
-
             filename = phase + '.mf'
             filepath = os.path.join(destDir, filename)
-            returnCode = subprocess.check_call([os.path.join(self.panda3dDevDir, 'bin', 'multify'), '-c', '-f', filepath, phasePath])
+            returnCode = subprocess.check_call([os.path.join(self.panda3dDevDir, 'bin', 'multify'), '-c', '-f', filepath, phase], cwd=resourcesDir)
             if returnCode == 0:
                 self.notify.info('%s built successfully!' % phase)
 
