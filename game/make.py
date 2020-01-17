@@ -19,9 +19,7 @@ class FunnyFarmCompilerBase:
         self.baseDir = os.path.join(self.rootDir, 'Toontowns-Funny-Farm')
         self.dataDir = os.path.join(self.rootDir, 'data')
         self.workingDir = os.path.join(self.rootDir, 'builds', self.version)
-        if not os.path.exists(self.workingDir):
-            os.makedirs(self.workingDir)
-
+        self.builtDir = None
         self.panda3dDevDir = os.path.join(self.rootDir, 'funny-farm-panda3d', 'built_dev')
         self.panda3dProdDir = None
         self.sourceDirs = []
@@ -46,6 +44,9 @@ class FunnyFarmCompilerBase:
             return
 
         self.notify.info('Generating config data...')
+
+        if not os.path.exists(self.workingDir):
+            os.makedirs(self.workingDir)
 
         with open(configFile, 'r') as f:
             configData = f.read()
@@ -73,6 +74,10 @@ class FunnyFarmCompilerBase:
 
     def copyBuildFiles(self):
         self.removeOldBuildFiles()
+        self.builtDir = os.path.join(self.workingDir, 'built')
+        if not os.path.exists(self.builtDir):
+            os.makedirs(self.builtDir)
+
         self.notify.info('Copying build files...')
         for sourceDir in self.sourceDirs:
             filepath = os.path.join(self.baseDir, sourceDir)
@@ -100,7 +105,7 @@ class FunnyFarmCompilerBase:
             self.notify.error('Panda3D development SDK not found! Unable to build resources.')
 
         self.notify.info('Building the resources...')
-        destDir = os.path.join(self.rootDir, self.workingDir, 'built', 'resources')
+        destDir = os.path.join(self.builtDir, 'resources')
         if not os.path.exists(destDir):
             os.makedirs(destDir)
 
@@ -121,9 +126,9 @@ class FunnyFarmCompilerBase:
 
         self.notify.info('All resources built successfully!')
 
-    def copyRequiredGameFiles(self):
+    def copyToBuiltDir(self):
         # This is entirely platform dependent and must be overriden by subclass.
-        raise NotImplementedError('copyRequiredGameFiles')
+        raise NotImplementedError('copyToBuiltDir')
 
 
 class FunnyFarmCompilerWindows(FunnyFarmCompilerBase):
@@ -134,6 +139,65 @@ class FunnyFarmCompilerWindows(FunnyFarmCompilerBase):
         self.arch = arch
         self.workingDir = os.path.join(self.workingDir, self.arch)
         self.panda3dProdDir = os.path.join(self.rootDir, 'funny-farm-panda3d', 'built_prod_%s' % self.arch)
+
+    def copyToBuiltDir(self):
+        self.notify.info('Copying to built directory...')
+        distDir = os.path.join(self.workingDir, '%s.dist' % os.path.splitext(os.path.basename(self.mainFile))[0])
+        if not os.path.exists(distDir):
+            return
+
+        gameFiles = [
+            'cg.dll',
+            'funnyfarm.exe',
+            'libcrypto-1_1.dll',
+            'libp3direct.dll',
+            'libp3dtool.dll',
+            'libp3dtoolconfig.dll',
+            'libp3interrogatedb.dll',
+            'libpanda.dll',
+            'libpandaexpress.dll',
+            'libpandaphysics.dll',
+            'libssl-1_1.dll',
+            'python37.dll',
+            'select.pyd',
+            '_cffi_backend.pyd',
+            '_socket.pyd',
+            '_ssl.pyd',
+            'panda3d/core.pyd',
+            'panda3d/direct.pyd',
+            'panda3d/physics.pyd',
+            'cryptography/hazmat/bindings/_constant_time.pyd',
+            'cryptography/hazmat/bindings/_openssl.pyd',
+            'cryptography/hazmat/bindings/_padding.pyd'
+        ]
+
+        for gameFile in gameFiles:
+            basename = os.path.basename(gameFile)
+            sourceDirName = os.path.dirname(gameFile)
+            destDirName = ''
+            if sourceDirName:
+                destDirName = os.path.join(self.builtDir, sourceDirName)
+                if not os.path.exists(destDirName):
+                    os.makedirs(destDirName)
+
+                shutil.copy(os.path.join(distDir, sourceDirName, basename), os.path.join(destDirName, basename))
+            else:
+                shutil.copy(os.path.join(distDir, sourceDirName, basename), os.path.join(self.builtDir, destDirName, basename))
+
+        if not os.path.exists(self.panda3dProdDir):
+            return
+
+        pandaDlls = [
+            'libpandagl.dll',
+            'libp3windisplay.dll',
+            'cgGL.dll',
+            'libp3openal_audio.dll'
+        ]
+
+        for pandaDll in pandaDlls:
+            shutil.copy(os.path.join(self.panda3dProdDir, 'bin', pandaDll), self.builtDir)
+
+        self.notify.info('Successfully copied to built directory!')
 
 
 class FunnyFarmCompilerDarwin(FunnyFarmCompilerBase):
@@ -171,7 +235,7 @@ if args.game:
     compiler.setMainFile(os.path.join(compiler.dataDir, 'funnyfarm.py'))
     compiler.copyBuildFiles()
     compiler.buildGame()
-    compiler.copyRequiredGameFiles()
+    compiler.copyToBuiltDir()
 
 if args.resources:
     compiler.buildResources()
