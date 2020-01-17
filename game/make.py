@@ -228,12 +228,12 @@ if (args.game or args.dist or args.resources):
         compiler = FunnyFarmCompilerDarwin(args.version)
 
 if args.game:
-    compiler.generateGameData(os.path.join('config', 'release.prc'))
     compiler.addSourceDir('libotp')
     compiler.addSourceDir('otp')
     compiler.addSourceDir('toontown')
     compiler.setMainFile(os.path.join(compiler.dataDir, 'funnyfarm.py'))
     compiler.copyBuildFiles()
+    compiler.generateGameData(os.path.join('config', 'release.prc'))
     compiler.buildGame()
     compiler.copyToBuiltDir()
 
