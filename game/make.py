@@ -370,6 +370,154 @@ class FunnyFarmCompilerDarwin(FunnyFarmCompilerBase):
         FunnyFarmCompilerBase.__init__(self, version, launcherVersion)
         self.panda3dProdDir = os.path.join(self.rootDir, 'funny-farm-panda3d', 'built_prod_darwin')
 
+    def fixMacLibs(self):
+        commands = [
+            'install_name_tool -change @loader_path/../Frameworks/Cg.framework/Cg @loader_path/Cg.framework/Cg libpanda.1.11.dylib',
+            'install_name_tool -change @loader_path/../lib/libpandafx.1.11.dylib @loader_path/libpandafx.1.11.dylib libpandagl.dylib',
+            'install_name_tool -change @loader_path/../lib/libpanda.1.11.dylib @loader_path/libpanda.1.11.dylib libpandagl.dylib',
+            'install_name_tool -change @loader_path/../lib/libpandaexpress.1.11.dylib @loader_path/libpandaexpress.1.11.dylib libpandagl.dylib',
+            'install_name_tool -change @loader_path/../lib/libp3dtool.1.11.dylib @loader_path/libp3dtool.1.11.dylib libpandagl.dylib',
+            'install_name_tool -change @loader_path/../lib/libp3dtoolconfig.1.11.dylib @loader_path/libp3dtoolconfig.1.11.dylib libpandagl.dylib',
+            'install_name_tool -change @loader_path/../Frameworks/Cg.framework/Cg @loader_path/Cg.framework/Cg libpandagl.dylib',
+            'install_name_tool -change @loader_path/../lib/libpanda.1.11.dylib @loader_path/libpanda.1.11.dylib libpandafx.1.11.dylib',
+            'install_name_tool -change @loader_path/../lib/libpandaexpress.1.11.dylib @loader_path/libpandaexpress.1.11.dylib libpandafx.1.11.dylib',
+            'install_name_tool -change @loader_path/../lib/libp3dtool.1.11.dylib @loader_path/libp3dtool.1.11.dylib libpandafx.1.11.dylib',
+            'install_name_tool -change @loader_path/../lib/libp3dtoolconfig.1.11.dylib @loader_path/libp3dtoolconfig.1.11.dylib libpandafx.1.11.dylib',
+            'install_name_tool -change @loader_path/../Frameworks/Cg.framework/Cg @loader_path/Cg.framework/Cg libpandafx.1.11.dylib',
+            'install_name_tool -change @loader_path/../lib/libpanda.1.11.dylib @loader_path/libpanda.1.11.dylib libp3openal_audio.dylib',
+            'install_name_tool -change @loader_path/../lib/libpandaexpress.1.11.dylib @loader_path/libpandaexpress.1.11.dylib libp3openal_audio.dylib',
+            'install_name_tool -change @loader_path/../lib/libp3dtool.1.11.dylib @loader_path/libp3dtool.1.11.dylib libp3openal_audio.dylib',
+            'install_name_tool -change @loader_path/../lib/libp3dtoolconfig.1.11.dylib @loader_path/libp3dtoolconfig.1.11.dylib libp3openal_audio.dylib'
+        ]
+        for command in commands:
+            subprocess.check_call(command.split(), cwd=self.builtDir)
+
+    def copyToBuiltDir(self):
+        self.notify.info('Copying to built directory...')
+        distDir = os.path.join(self.workingDir, '%s.dist' % os.path.splitext(os.path.basename(self.mainFile))[0])
+        if not os.path.exists(distDir):
+            return
+
+        gameFiles = [
+            '_blake2.so',
+            '_cffi_backend.so',
+            '_hashlib.so',
+            '_random.so',
+            '_sha3.so',
+            '_socket.so',
+            '_ssl.so',
+            '_struct.so',
+            'binascii.so',
+            'cryptography/hazmat/bindings/_constant_time.so',
+            'cryptography/hazmat/bindings/_openssl.so',
+            'cryptography/hazmat/bindings/_padding.so',
+            'funnyfarm',
+            'libcrypto.1.1.dylib',
+            'libp3direct.1.11.dylib',
+            'libp3dtool.1.11.dylib',
+            'libp3dtoolconfig.1.11.dylib',
+            'libp3interrogatedb.1.11.dylib',
+            'libpanda.1.11.dylib',
+            'libpandaexpress.1.11.dylib',
+            'libpandaphysics.1.11.dylib',
+            'libssl.1.1.dylib',
+            'math.so',
+            'panda3d/core.so',
+            'panda3d/direct.so',
+            'panda3d/physics.so',
+            'Python',
+            'select.so',
+            'zlib.so'
+        ]
+
+        for gameFile in gameFiles:
+            basename = os.path.basename(gameFile)
+            sourceDirName = os.path.dirname(gameFile)
+            destDirName = ''
+            if sourceDirName:
+                destDirName = os.path.join(self.builtDir, sourceDirName)
+                if not os.path.exists(destDirName):
+                    os.makedirs(destDirName)
+
+                shutil.copy(os.path.join(distDir, sourceDirName, basename), os.path.join(destDirName, basename))
+            else:
+                shutil.copy(os.path.join(distDir, sourceDirName, basename), os.path.join(self.builtDir, destDirName, basename))
+
+        if not os.path.exists(self.panda3dProdDir):
+            return
+
+        pandaDylibs = [
+            'libp3openal_audio.dylib',
+            'libpandafx.1.11.dylib',
+            'libpandagl.dylib',
+        ]
+
+        for pandaDylib in pandaDylibs:
+            shutil.copy(os.path.join(self.panda3dProdDir, 'lib', pandaDylib), self.builtDir)
+
+        # Copy Cg.framework/Cg too.
+        cgFrameworkDir = os.path.join(self.builtDir, 'Cg.framework')
+        if not os.path.exists(cgFrameworkDir):
+            os.makedirs(cgFrameworkDir)
+
+        shutil.copy(os.path.join(self.panda3dProdDir, 'Frameworks', 'Cg.framework', 'Cg'), cgFrameworkDir)
+
+        self.fixMacLibs()
+
+        self.notify.info('Successfully copied to built directory!')
+
+    def getDistributables(self):
+        distributables = [
+            '_blake2.so',
+            '_cffi_backend.so',
+            '_hashlib.so',
+            '_random.so',
+            '_sha3.so',
+            '_socket.so',
+            '_ssl.so',
+            '_struct.so',
+            'binascii.so',
+            'Cg.framework/Cg',
+            'cryptography/hazmat/bindings/_constant_time.so',
+            'cryptography/hazmat/bindings/_openssl.so',
+            'cryptography/hazmat/bindings/_padding.so',
+            'funnyfarm',
+            'libcrypto.1.1.dylib',
+            'libp3direct.1.11.dylib',
+            'libp3dtool.1.11.dylib',
+            'libp3dtoolconfig.1.11.dylib',
+            'libp3interrogatedb.1.11.dylib',
+            'libp3openal_audio.dylib',
+            'libpanda.1.11.dylib',
+            'libpandaexpress.1.11.dylib',
+            'libpandafx.1.11.dylib',
+            'libpandagl.dylib',
+            'libpandaphysics.1.11.dylib',
+            'libssl.1.1.dylib',
+            'math.so',
+            'panda3d/core.so',
+            'panda3d/direct.so',
+            'panda3d/physics.so',
+            'Python',
+            'resources/phase_3.5.mf',
+            'resources/phase_3.mf',
+            'resources/phase_4.mf',
+            'resources/phase_5.5.mf',
+            'resources/phase_5.mf',
+            'resources/phase_6.mf',
+            'resources/phase_7.mf',
+            'resources/phase_8.mf',
+            'resources/phase_9.mf',
+            'resources/phase_10.mf',
+            'resources/phase_11.mf',
+            'resources/phase_12.mf',
+            'resources/phase_13.mf',
+            'resources/phase_14.mf',
+            'select.so',
+            'zlib.so'
+        ]
+        return distributables
+
 
 parser = argparse.ArgumentParser(description='Build script for Toontown\'s Funny Farm')
 parser.add_argument('--version', '-v', help='Game version', required=True)
