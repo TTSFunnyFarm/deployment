@@ -160,7 +160,7 @@ class FunnyFarmCompilerBase:
 
         self.notify.info('Files written to patch manifest successfully.')
 
-        gameVersion = self.version.strip('v')
+        gameVersion = self.version.strip('ff-v')
         self.notify.info('Writing game-version...')
         self.notify.info('game-version: %s' % gameVersion)
         manifest['game-version'] = gameVersion
