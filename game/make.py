@@ -240,6 +240,7 @@ class FunnyFarmCompilerWindows(FunnyFarmCompilerBase):
         FunnyFarmCompilerBase.__init__(self, version, launcherVersion)
         self.arch = arch
         self.workingDir = os.path.join(self.workingDir, self.arch)
+        self.panda3dDevDir = os.path.join(self.rootDir, 'funny-farm-panda3d', 'built_dev_%s' % self.arch)
         self.panda3dProdDir = os.path.join(self.rootDir, 'funny-farm-panda3d', 'built_prod_%s' % self.arch)
 
     def removeOldBuildFiles(self):
